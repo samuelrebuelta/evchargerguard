@@ -15,6 +15,8 @@ let intervalId;
 
 function stopProcess() {
   if (!intervalId) { return };
+
+  // Clear the interval and set it to null
   clearInterval(intervalId);
   intervalId = null;
   console.log("⏹ Proceso detenido");
@@ -22,32 +24,42 @@ function stopProcess() {
 
 async function checkStatus() {
   try {
-    const headers = { 'versionApp': API_VERSION_APP_HEADER };
+    // Fetch the status of the chargers
+    const headers = {
+      'versionApp': API_VERSION_APP_HEADER,
+      'User-Agent': 'azkarga/4.28.5 (es.iberdrola.recargaverde; build:428501; iOS 18.3.0) Alamofire/4.9.1',
+    };
     const cuprId = CHARGERS_TO_CHECK.split(',').map(Number);
     const payload = { cuprId };
     const { data } = await axios.post(API_URL, payload, { headers });
+
+    // Map the data to the format we need
     const chargers = data.map(charger => ({
       cuprId: charger.locationData.cuprId,
-      serialNumber: charger.serialNumber,
       displayedTitle: charger.displayedTitle,
       status: charger.cpStatus?.statusCode,
       lastUpdate: charger.logicalSocket.map(({ status }) => moment.tz(status.updateDate, 'Europe/Madrid').format('DD-MM-YYYY HH:mm:ss')),
     }));
 
-    if (chargers.some(charger => charger.status === 'AVAILABLE')) {
-      await sendEmailSuccess();
-      stopProcess();
-    }
     return chargers;
   } catch (error) {
     await sendEmailError(error);
-    stopProcess();
     console.error('❌ Error:', error.message);
   }
 }
 
+async function calculateSendEmailSuccess(chargers) {
+  // If any of the chargers is available, send the success email and stop the process
+  if (chargers.some(charger => charger.status === 'AVAILABLE')) {
+    await sendEmailSuccess();
+    stopProcess();
+  }
+}
+
 app.get('/status', async (req, res) => {
+  // Check the status of the chargers
   const chargers = await checkStatus();
+  // Generate the HTML template
   const template = generateStatusTemplate(chargers, intervalId);
 
   return res.send(template);
@@ -58,11 +70,15 @@ app.get('/start', async (req, res) => {
     return res.status(400).json({ message: "El proceso ya está en ejecución" });
   }
 
-  await checkStatus();
+  // First check to send the initial email
+  const chargers = await checkStatus().catch(() => stopProcess());
   await sendEmailListening();
+  await calculateSendEmailSuccess(chargers);
 
+  // Interval to check the status every 2 minutes
   intervalId = setInterval(async () => {
-    await checkStatus();
+    const chargers = await checkStatus().catch(() => stopProcess());
+    await calculateSendEmailSuccess(chargers);
   }, 60 * 1000 * 2);
 
   console.log('▶ Iniciando guardia');
@@ -70,7 +86,9 @@ app.get('/start', async (req, res) => {
 });
 
 app.get('/stop', (req, res) => {
+  // Stop the process
   stopProcess();
+
   return res.json({ message: '⏹ Proceso detenido' });
 });
 

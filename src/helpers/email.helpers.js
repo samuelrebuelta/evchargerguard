@@ -31,7 +31,7 @@ async function sendEmailError(error) {
 }
 
 async function sendEmailListening() {
-  await sendEmail("INICIANDO GUARDIA", "El sistema ha iniciado la guardia para comprobar la disponibilidad de cargadores.");
+  await sendEmail("GUARDIA INICIADA", "El sistema ha iniciado la guardia para comprobar la disponibilidad de cargadores.");
 }
 
 async function sendEmailSuccess() {

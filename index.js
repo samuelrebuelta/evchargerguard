@@ -21,9 +21,9 @@ const transporter = nodemailer.createTransport({
 
 async function sendEmailError(error) {
   const mailOptions = {
-    from: EMAIL_USER,
+    from: `EV Charger Guard APP <${EMAIL_USER}>`,
     to: EMAIL_TO,
-    subject: "Alerta: Error al consultar cargadores",
+    subject: "ERROR AL CONSULTAR LOS CARGADORES",
     text: JSON.stringify(error),
   };
 
@@ -37,9 +37,9 @@ async function sendEmailError(error) {
 
 async function sendEmailListening() {
   const mailOptions = {
-    from: EMAIL_USER,
+    from: `EV Charger Guard APP <${EMAIL_USER}>`,
     to: EMAIL_TO,
-    subject: "Alerta: Iniciando guardia",
+    subject: "INICIANDO GUARDIA",
     text: "El sistema ha iniciado la guardia para comprobar la disponibilidad de cargadores.",
   };
 
@@ -53,9 +53,9 @@ async function sendEmailListening() {
 
 async function sendEmailSuccess() {
   const mailOptions = {
-    from: EMAIL_USER,
+    from: `EV Charger Guard APP <${EMAIL_USER}>`,
     to: EMAIL_TO,
-    subject: "Alerta: Cargador disponible",
+    subject: "CARGADOR DISPONIBLE",
     text: "El sistema ha detectado que uno de los cargadores consultados está disponible.",
   };
 

@@ -90,7 +90,7 @@ async function checkStatus() {
   } catch (error) {
     await sendEmailError(error);
     stopProcess();
-    console.error('Error:', error.message);
+    console.error('❌ Error:', error.message);
   }
 }
 
@@ -120,7 +120,23 @@ app.get('/stop', (req, res) => {
   return res.json({ message: '⏹ Proceso detenido' });
 });
 
+// Endpoint to handle keep-alive requests
+app.get('/keep-alive', (req, res) => {
+  res.json({ message: '🔄 Server is alive' });
+});
+
 // Init the server
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+
+  // Schedule the keep-alive requests to run every minute
+  keepAliveIntervalId = setInterval(() => {
+    axios.get(`https://evchargerguard.onrender.com/keep-alive`)
+      .then(({ data }) => console.log(data))
+      .catch((error) => {
+        clearInterval(keepAliveIntervalId);
+        keepAliveIntervalId = null;
+        console.error('❌ Error en la petición keep-alive:', error.message);
+      });
+  }, 60 * 1000);
 });

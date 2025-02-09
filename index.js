@@ -98,7 +98,7 @@ async function checkStatus() {
 }
 
 // Endpoint to start the process
-app.get('/', (req, res) => {
+app.get('/start', (req, res) => {
   // If there is already a process running, return an error
   if (intervalId) {
     return res.status(400).json({ message: "El proceso ya está en ejecución" });

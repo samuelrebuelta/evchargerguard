@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const nodemailer = require('nodemailer');
+const moment = require('moment-timezone');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -86,8 +87,8 @@ async function checkStatus() {
     if (chargers.some(charger => charger.cpStatus?.statusCode === 'AVAILABLE')) {
       await sendEmailSuccess();
       stopProcess();
-      return;
     }
+    return chargers;
   } catch (error) {
     await sendEmailError(error);
     stopProcess();
@@ -119,6 +120,17 @@ app.get('/start', async (req, res) => {
 app.get('/stop', (req, res) => {
   stopProcess();
   return res.json({ message: '⏹ Proceso detenido' });
+});
+
+app.get('/status', async (req, res) => {
+  const status = await checkStatus();
+  const chargers = status.map(charger => ({
+    id: charger.cpId,
+    serialNumber: charger.serialNumber,
+    status: charger.cpStatus?.statusCode,
+    lastUpdate: charger.logicalSocket.map(({ status }) => moment.tz(status.updateDate, 'Europe/Madrid').format('DD-MM-YYYY HH:mm:ss')),
+  }));
+  return res.json({ chargers });
 });
 
 // Endpoint to handle keep-alive requests

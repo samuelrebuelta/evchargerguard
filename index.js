@@ -18,22 +18,23 @@ const transporter = nodemailer.createTransport({
   auth: { user: EMAIL_USER, pass: EMAIL_SMTP_PASS },
 });
 
-async function checkStatus() {
+async function sendEmailError(error) {
+  const mailOptions = {
+    from: EMAIL_USER,
+    to: EMAIL_TO,
+    subject: "Alerta: Error al consultar cargadores",
+    text: JSON.stringify(error),
+  };
+
   try {
-    const headers = { 'versionApp': API_VERSION_APP_HEADER };
-    const data = { cuprId: [166318, 7385] };
-    const { data: chargers } = await axios.post(API_URL, data, { headers });
-    console.log('Chargers:', chargers);
-    if (chargers.some(charger => charger.cpStatus?.statusCode === 'AVAILABLE')) {
-      await sendEmail();
-      stopProcess();
-    }
+    await transporter.sendMail(mailOptions);
+    console.log("📧 Email enviado correctamente");
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error("❌ Error al enviar el email:", error.message);
   }
 }
 
-async function sendEmail() {
+async function sendEmailSuccess() {
   const mailOptions = {
     from: EMAIL_USER,
     to: EMAIL_TO,
@@ -54,6 +55,23 @@ function stopProcess() {
   clearInterval(intervalId);
   intervalId = null;
   console.log("⏹ Proceso detenido");
+}
+
+async function checkStatus() {
+  try {
+    const headers = { 'versionApp': API_VERSION_APP_HEADER };
+    const data = { cuprId: [166318, 7385] };
+    const { data: chargers } = await axios.post(API_URL, data, { headers });
+    console.log('Chargers:', chargers);
+    if (chargers.some(charger => charger.cpStatus?.statusCode === 'AVAILABLE')) {
+      await sendEmailSuccess();
+      stopProcess();
+    }
+  } catch (error) {
+    await sendEmailError(error);
+    stopProcess();
+    console.error('Error:', error.message);
+  }
 }
 
 // Endpoint para iniciar el proceso

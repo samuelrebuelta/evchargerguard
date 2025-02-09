@@ -122,6 +122,7 @@ app.get('/stop', (req, res) => {
   return res.json({ message: '⏹ Proceso detenido' });
 });
 
+// Endpoint to check the status of the chargers
 app.get('/status', async (req, res) => {
   const status = await checkStatus();
   const chargers = status.map(charger => ({
@@ -130,7 +131,50 @@ app.get('/status', async (req, res) => {
     status: charger.cpStatus?.statusCode,
     lastUpdate: charger.logicalSocket.map(({ status }) => moment.tz(status.updateDate, 'Europe/Madrid').format('DD-MM-YYYY HH:mm:ss')),
   }));
-  return res.json({ chargers });
+  let html = `
+    <html>
+      <head>
+        <style>
+          table {
+            font-family: monospace;
+            width: 100%;
+            border-collapse: collapse;
+          }
+          th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+          }
+          th {
+            background-color: #f2f2f2;
+          }
+        </style>
+      </head>
+      <body>
+        <table>
+          <tr>
+            <th>ID</th>
+            <th>Serial Number</th>
+            <th>Status</th>
+            <th>Last Update</th>
+          </tr>`;
+
+  chargers.forEach(charger => {
+    html += `
+          <tr>
+            <td>${charger.id}</td>
+            <td>${charger.serialNumber}</td>
+            <td>${charger.status}</td>
+            <td>${charger.lastUpdate.join('<br>')}</td>
+          </tr>`;
+  });
+
+  html += `
+        </table>
+      </body>
+    </html>`;
+
+  return res.send(html);
 });
 
 // Endpoint to handle keep-alive requests

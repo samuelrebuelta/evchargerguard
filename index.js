@@ -80,6 +80,7 @@ async function checkStatus() {
     const cuprId = CHARGERS_TO_CHECK.split(',').map(Number);
     const data = { cuprId };
     const { data: chargers } = await axios.post(API_URL, data, { headers });
+    console.log('🔍 Cargadores:', chargers);
 
     // If any of the chargers is available, send the success email and stop the process
     if (chargers.some(charger => charger.cpStatus?.statusCode === 'AVAILABLE')) {
@@ -108,7 +109,7 @@ app.get('/start', async (req, res) => {
   // Schedule the process to run every 3 minutes
   intervalId = setInterval(() => {
     checkStatus();
-  }, 60 * 1000 * 3);
+  }, 60 * 1000 * 2);
 
   console.log('▶ Iniciando guardia');
   res.json({ message: '▶ Iniciando guardia' });
@@ -122,7 +123,7 @@ app.get('/stop', (req, res) => {
 
 // Endpoint to handle keep-alive requests
 app.get('/keep-alive', (req, res) => {
-  res.json({ message: '🔄 Server is alive' });
+  res.json({ message: '🔄 El servidor está activo' });
 });
 
 // Init the server

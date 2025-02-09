@@ -79,8 +79,14 @@ async function checkStatus() {
   try {
     const headers = { 'versionApp': API_VERSION_APP_HEADER };
     const cuprId = CHARGERS_TO_CHECK.split(',').map(Number);
-    const data = { cuprId };
-    const { data: chargers } = await axios.post(API_URL, data, { headers });
+    const payload = { cuprId };
+    const { data } = await axios.post(API_URL, payload, { headers });
+    const chargers = data.map(charger => ({
+      id: charger.cpId,
+      serialNumber: charger.serialNumber,
+      status: charger.cpStatus?.statusCode,
+      lastUpdate: charger.logicalSocket.map(({ status }) => moment.tz(status.updateDate, 'Europe/Madrid').format('DD-MM-YYYY HH:mm:ss')),
+    }));
     console.log('🔍 Cargadores:', chargers);
 
     // If any of the chargers is available, send the success email and stop the process
@@ -124,19 +130,15 @@ app.get('/stop', (req, res) => {
 
 // Endpoint to check the status of the chargers
 app.get('/status', async (req, res) => {
-  const status = await checkStatus();
-  const chargers = status.map(charger => ({
-    id: charger.cpId,
-    serialNumber: charger.serialNumber,
-    status: charger.cpStatus?.statusCode,
-    lastUpdate: charger.logicalSocket.map(({ status }) => moment.tz(status.updateDate, 'Europe/Madrid').format('DD-MM-YYYY HH:mm:ss')),
-  }));
+  const chargers = await checkStatus();
   let html = `
     <html>
       <head>
         <style>
-          table {
+          html {
             font-family: monospace;
+          }
+          table {
             width: 100%;
             border-collapse: collapse;
           }
@@ -147,6 +149,17 @@ app.get('/status', async (req, res) => {
           }
           th {
             background-color: #f2f2f2;
+          }
+          button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+          }
+          button:hover {
+            background-color: #45a049;
           }
         </style>
       </head>
@@ -171,6 +184,22 @@ app.get('/status', async (req, res) => {
 
   html += `
         </table>
+        <button id="startButton" onclick="startProcess()">Start Process</button>
+        <p id="statusMessage"></p>
+        <script>
+          function startProcess() {
+            fetch('/start')
+              .then(response => response.json())
+              .then(data => {
+                document.getElementById('startButton').style.display = 'none';
+                document.getElementById('statusMessage').innerText = data.message === '▶ Iniciando guardia' ? 'Guardia iniciada...' : data.message;
+              })
+              .catch(error => {
+                document.getElementById('statusMessage').innerText = 'Error: ' + error.message;
+                console.error('Error:', error);
+              });
+          }
+        </script>
       </body>
     </html>`;
 

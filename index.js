@@ -33,7 +33,6 @@ async function checkStatus() {
       status: charger.cpStatus?.statusCode,
       lastUpdate: charger.logicalSocket.map(({ status }) => moment.tz(status.updateDate, 'Europe/Madrid').format('DD-MM-YYYY HH:mm:ss')),
     }));
-    console.log('🔍 Cargadores:', chargers);
 
     if (chargers.some(charger => charger.status === 'AVAILABLE')) {
       await sendEmailSuccess();

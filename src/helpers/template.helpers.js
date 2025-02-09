@@ -1,4 +1,5 @@
 function generateStatusTemplate(chargers, intervalId) {
+  const isAvailable = chargers.some(charger => charger.status === 'AVAILABLE');
   return `
     <html>
       <head>
@@ -62,9 +63,10 @@ function generateStatusTemplate(chargers, intervalId) {
             </div>
           `).join('')}
         </div>
-        <button class="button-success" id="startButton" style="display: ${intervalId ? 'none' : 'inline-block'};" onclick="startProcess()">Iniciar guardia</button>
-        <button class="button-error" id="stopButton" style="display: ${intervalId ? 'inline-block' : 'none'};" onclick="stopProcess()">Detener guardia</button>
-        <p id="statusMessage"></p>
+        ${isAvailable ? '<h3 style="text-align: center;">⚡️ Cargador disponible ⚡️</h3>' : `
+          <button class="button-success" id="startButton" style="display: ${intervalId ? 'none' : 'inline-block'};" onclick="startProcess()">Iniciar guardia</button>
+          <button class="button-error" id="stopButton" style="display: ${intervalId ? 'inline-block' : 'none'};" onclick="stopProcess()">Detener guardia</button>
+        `}
         <script>
           function startProcess() {
             fetch('/start')
@@ -72,10 +74,8 @@ function generateStatusTemplate(chargers, intervalId) {
               .then(data => {
                 document.getElementById('startButton').style.display = 'none';
                 document.getElementById('stopButton').style.display = 'inline-block';
-                document.getElementById('statusMessage').innerText = data.message === '▶ Iniciando guardia' ? 'Guardia iniciada...' : data.message;
               })
               .catch(error => {
-                document.getElementById('statusMessage').innerText = 'Error: ' + error.message;
                 console.error('Error:', error);
               });
           }
@@ -86,10 +86,8 @@ function generateStatusTemplate(chargers, intervalId) {
               .then(data => {
                 document.getElementById('startButton').style.display = 'inline-block';
                 document.getElementById('stopButton').style.display = 'none';
-                document.getElementById('statusMessage').innerText = data.message === '⏹ Proceso detenido' ? 'Guardia detenida...' : data.message;
               })
               .catch(error => {
-                document.getElementById('statusMessage').innerText = 'Error: ' + error.message;
                 console.error('Error:', error);
               });
           }

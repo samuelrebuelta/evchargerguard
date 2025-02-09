@@ -35,7 +35,7 @@ async function checkStatus() {
     }));
     console.log('🔍 Cargadores:', chargers);
 
-    if (chargers.some(charger => charger.cpStatus?.statusCode === 'AVAILABLE')) {
+    if (chargers.some(charger => charger.status === 'AVAILABLE')) {
       await sendEmailSuccess();
       stopProcess();
     }
@@ -50,6 +50,7 @@ async function checkStatus() {
 app.get('/status', async (req, res) => {
   const chargers = await checkStatus();
   const template = generateStatusTemplate(chargers, intervalId);
+
   return res.send(template);
 });
 
@@ -61,8 +62,8 @@ app.get('/start', async (req, res) => {
   await checkStatus();
   await sendEmailListening();
 
-  intervalId = setInterval(() => {
-    checkStatus();
+  intervalId = setInterval(async () => {
+    await checkStatus();
   }, 60 * 1000 * 2);
 
   console.log('▶ Iniciando guardia');

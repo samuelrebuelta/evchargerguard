@@ -87,9 +87,6 @@ async function checkStatus() {
       stopProcess();
       return;
     }
-
-    // If no charger is available, send the listening email
-    await sendEmailListening();
   } catch (error) {
     await sendEmailError(error);
     stopProcess();
@@ -98,14 +95,15 @@ async function checkStatus() {
 }
 
 // Endpoint to start the process
-app.get('/start', (req, res) => {
+app.get('/start', async (req, res) => {
   // If there is already a process running, return an error
   if (intervalId) {
     return res.status(400).json({ message: "El proceso ya está en ejecución" });
   }
 
   // Initialize the process
-  checkStatus();
+  await checkStatus();
+  await sendEmailListening();
 
   // Schedule the process to run every 3 minutes
   intervalId = setInterval(() => {

@@ -12,6 +12,7 @@ const API_VERSION_APP_HEADER = process.env.API_VERSION_APP_HEADER;
 const CHARGERS_TO_CHECK = process.env.CHARGERS_TO_CHECK;
 
 let intervalId;
+let keepAliveIntervalId;
 
 function stopProcess() {
   if (!intervalId) { return };
@@ -56,6 +57,18 @@ async function calculateSendEmailSuccess(chargers) {
   }
 }
 
+function setKeepAliveInterval() {
+  keepAliveIntervalId = setInterval(() => {
+    axios.get(`https://evchargerguard.onrender.com/health`)
+      .then(({ data }) => console.log(data))
+      .catch((error) => {
+        clearInterval(keepAliveIntervalId);
+        keepAliveIntervalId = null;
+        console.error('❌ Error en la petición keep-alive:', error.message);
+      });
+  }, 60 * 1000);
+}
+
 app.get('/status', async (req, res) => {
   // Check the status of the chargers
   const chargers = await checkStatus();
@@ -98,4 +111,7 @@ app.get('/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+
+  // Schedule the keep alive requests to run every minute
+  setKeepAliveInterval();
 });

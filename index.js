@@ -92,7 +92,7 @@ app.get('/stop', (req, res) => {
   return res.json({ message: '⏹ Proceso detenido' });
 });
 
-app.get('/keep-alive', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ message: '🔄 El servidor está activo' });
 });
 
